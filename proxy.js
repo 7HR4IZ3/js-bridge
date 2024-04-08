@@ -20,6 +20,18 @@ class BaseProxy {
         if (property === isProxy) return true;
         if (property === getTarget) return self.#target;
 
+        if (property === "then") {
+          if (self.#target.$$__obj_type__$$ !== "awaitable") {
+            return evaluatePromiseSync(
+              self.#target.client.recieve({
+                target: property,
+                action: "await_proxy",
+                location: self.#target.$$__location__$$
+              })
+            );
+          }
+        }
+
         if (property == "toJSON") {
           return () => ({
             $$__reverse__$$: true,
@@ -167,8 +179,7 @@ class ChainProxy extends Function {
   }
 
   set [getCallstack](value) {
-    if (!Array.isArray(value))
-      throw new Error("Callstack must be an array");
+    if (!Array.isArray(value)) throw new Error("Callstack must be an array");
     this.#callstack = value;
   }
 
@@ -181,9 +192,7 @@ class ChainProxy extends Function {
         if (property === getCallstack) return self.#callstack;
 
         if (typeof property == "string" && property.endsWith("$$")) {
-          const next = new ChainProxy(
-            target[getTarget], target[getCallstack]
-          );
+          const next = new ChainProxy(target[getTarget], target[getCallstack]);
           if (!(property === "$$")) {
             next[getCallstack].push(property.slice(0, -2));
           }
@@ -209,7 +218,19 @@ class ChainProxy extends Function {
                   stack: target[getCallstack],
                   location: target[getTarget].$$__location__$$
                 })
-                .then(resolve).catch(reject);
+                .then(resolve)
+                .catch(reject);
+            };
+          } else if (target[getTarget].$$__obj_type__$$ === "awaitable") {
+            return (resolve, reject) => {
+              target[getTarget].client
+                .recieve({
+                  target: property,
+                  action: "await_proxy",
+                  location: target[getTarget].$$__location__$$
+                })
+                .then(resolve)
+                .catch(reject);
             };
           }
         }
@@ -220,7 +241,8 @@ class ChainProxy extends Function {
             return function* iter() {
               for (let i = 0; i < 100; i++) {
                 const next = new ChainProxy(target[getTarget], [
-                  ...target[getCallstack], i
+                  ...target[getCallstack],
+                  i
                 ]);
                 yield next;
               }
@@ -246,14 +268,12 @@ class ChainProxy extends Function {
           return;
         }
 
-        if (Number.isInteger(parseInt(property)))
-          property = parseInt(property);
+        if (Number.isInteger(parseInt(property))) property = parseInt(property);
 
-        return new ChainProxy(
-          target[getTarget], [
-            ...target[getCallstack], property
-          ]
-        );
+        return new ChainProxy(target[getTarget], [
+          ...target[getCallstack],
+          property
+        ]);
       },
 
       set: function (target, property, value) {
@@ -265,7 +285,8 @@ class ChainProxy extends Function {
               location: target[getTarget].$$__location__$$,
               value: value
             })
-            .then(resolve).catch(reject);
+            .then(resolve)
+            .catch(reject);
         });
       },
       ownKeys: function (target) {
@@ -290,20 +311,24 @@ class ChainProxy extends Function {
         return new Promise((resolve, reject) => {
           target[getTarget].client
             .recieve({
-              action: "delete_proxy_attribute", target: prop,
+              action: "delete_proxy_attribute",
+              target: prop,
               location: target[getTarget].$$__location__$$
             })
-            .then(resolve).catch(reject);
+            .then(resolve)
+            .catch(reject);
         });
       },
       has: function (target, prop) {
         return new Promise((resolve, reject) => {
           target[getTarget].client
             .recieve({
-              action: "has_proxy_attribute", target: prop,
+              action: "has_proxy_attribute",
+              target: prop,
               location: target[getTarget].$$__location__$$
             })
-            .then(resolve).catch(reject);
+            .then(resolve)
+            .catch(reject);
         });
       },
       apply: function (target, _thisArg, args) {
@@ -350,9 +375,12 @@ class ChainProxy extends Function {
               action: "call_proxy",
               stack: target[getCallstack],
               location: target[getTarget].$$__location__$$,
-              args: args, kwargs: kwargs, isolate
+              args: args,
+              kwargs: kwargs,
+              isolate
             })
-            .then(resolve).catch(reject);
+            .then(resolve)
+            .catch(reject);
         });
       },
       construct: function (target, args) {
@@ -390,9 +418,12 @@ class ChainProxy extends Function {
               action: "call_proxy_constructor",
               stack: target[getCallstack],
               location: target[getTarget].$$__location__$$,
-              args: args, kwargs: kwargs, isolate
+              args: args,
+              kwargs: kwargs,
+              isolate
             })
-            .then(resolve).catch(reject);
+            .then(resolve)
+            .catch(reject);
           return;
         });
       }
@@ -401,6 +432,8 @@ class ChainProxy extends Function {
 }
 
 module.exports = {
-  isProxy, getTarget,
-  BaseProxy, ChainProxy
+  isProxy,
+  getTarget,
+  BaseProxy,
+  ChainProxy
 };

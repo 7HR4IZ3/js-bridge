@@ -18,8 +18,8 @@ class BaseBridgeClient extends BaseHandler {
     });
 
     this.on("configure:before", config => {
-      if (config.connection && !(config.connection instanceof BaseConnection))
-        throw new Error("Connection must be an instance of BaseConnection");
+      // if (config.connection && !(config.connection instanceof BaseConnection))
+      //   throw new Error("Connection must be an instance of BaseConnection");
     });
   }
 

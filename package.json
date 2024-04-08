@@ -15,8 +15,6 @@
   "author": "Thraize",
   "license": "MIT",
   "dependencies": {
-    "deasync": "^0.1.29",
-    "lossless-json": "^4.0.1",
-    "ws": "^8.16.0"
+    "lossless-json": "^4.0.1"
   }
 }

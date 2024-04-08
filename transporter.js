@@ -137,7 +137,7 @@ class BaseTransporter extends EventEmitter {
     let DEBUG = this.getConfig("debug");
     let dataString = data.toString();
 
-    // console.log("Handling:", dataString);
+    console.log("Handling:", dataString);
 
     // Check if the data contains 'Content-Length'
     if (dataString.includes("Content-Length")) {
@@ -247,11 +247,13 @@ class BridgeClient extends BaseTransporterClient {
   #channel;
 
   constructor(channel) {
+    super();
     this.#channel = channel;
   }
 
   send(message) {
-    this.#channel.send(message);
+    console.log("Sending:", message)
+    this.#channel.post("bridge:message", message);
   }
 }
 
@@ -259,19 +261,24 @@ class BridgeTransporter extends BaseTransporter {
   #channel;
 
   constructor(channel) {
+    super();
     this.#channel = channel;
   }
 
   #start() {
     let client = new BridgeClient(this.#channel);
 
-    this.#channel.on("open", () => client.emit("ready"));
-    this.#channel.on("close", () => client.emit("close"));
-    this.#channel.on("error", () => client.emit("error"));
-    this.#channel.on("message", data => client.emit("message", data));
+    this.#channel.on("bridge:open", () => client.emit("ready"));
+    this.#channel.on("bridge:close", () => client.emit("close"));
+    this.#channel.on("bridge:error", () => client.emit("error"));
+    this.#channel.on("bridge:message", data => {
+      console.log("Recieved:", data);
+      client.emit("message", data)
+    });
 
     return client;
   }
+
 
   startClient() {
     return this.#start();

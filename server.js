@@ -18,8 +18,8 @@ class BaseBridgeServer extends BaseHandler {
     });
 
     this.on("configure:before", config => {
-      if (config.connection && !(config.connection instanceof BaseConnection))
-        throw new Error("Connection must be an instance of BaseConnection");
+      // if (config.connection && !(config.connection instanceof BaseConnection))
+      //   throw new Error("Connection must be an instance of BaseConnection");
     });
   }
 
@@ -31,6 +31,7 @@ class BaseBridgeServer extends BaseHandler {
       throw new Error("Invalid 'transporter' config specified");
 
     transporter.configure({ server: this });
+    transporter.startServer();
 
     transporter.on("connection", client => {
       let connection = new (this.getConfig("connection"))({
@@ -49,8 +50,6 @@ class BaseBridgeServer extends BaseHandler {
       client.on("message", message => this.handleMessage(client, message));
       this.emit("connection", client, connection);
     });
-
-    transporter.startServer();
   }
 }
 
